@@ -428,9 +428,23 @@ const S14: React.FC = () => {
         `}
       />
       <svg width={1920} height={1080} style={{ position: "absolute", left: 0, top: 0, opacity: show }}>
-        {EDGES.map(([a, b], i) => (
-          <line key={i} x1={TREE[a].x} y1={TREE[a].y} x2={TREE[b].x} y2={TREE[b].y} stroke={C.line} strokeWidth={4} />
-        ))}
+        {EDGES.map(([a, b], i) => {
+          const from = TREE[a];
+          const to = TREE[b];
+          return (
+            <line
+              key={i}
+              x1={from.x}
+              y1={from.y + 26}
+              x2={to.x}
+              y2={to.y - (to.leaf ? 34 : 26)}
+              stroke={C.dim}
+              strokeOpacity={0.55}
+              strokeWidth={3}
+              strokeLinecap="round"
+            />
+          );
+        })}
       </svg>
       {TREE.map((n, i) => {
         const p = s(3, 24 + i * 6, POP);
@@ -476,7 +490,7 @@ const S14: React.FC = () => {
               height: 64,
               borderRadius: 12,
               border: `3px solid ${color}`,
-              background: `${color}22`,
+              background: `linear-gradient(${color}22, ${color}22), ${C.bg}`,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
