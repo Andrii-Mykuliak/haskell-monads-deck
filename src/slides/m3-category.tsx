@@ -212,6 +212,42 @@ const VDash: React.FC<{ x: number; y1: number; y2: number; step: number; delay?:
   );
 };
 
+/** A value with its type underneath: the arrows change the value, the type may stay the same. */
+const ValCorner: React.FC<{ p: P; step: number; delay?: number; value: string; type: string; color?: string }> = ({
+  p,
+  step,
+  delay = 0,
+  value,
+  type,
+  color = C.lav,
+}) => {
+  const { s } = useSteps();
+  const a = s(step, delay, POP);
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: p.x,
+        top: p.y,
+        transform: `translate(-50%, -50%) scale(${0.7 + 0.3 * a})`,
+        opacity: clamp01(a),
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        padding: "6px 18px 8px",
+        borderRadius: 12,
+        border: `3px solid ${color}`,
+        background: C.panel,
+        fontVariantLigatures: "none",
+        whiteSpace: "nowrap",
+      }}
+    >
+      <span style={{ fontFamily: F.mono, fontWeight: 700, fontSize: 30, color: C.mint }}>{value}</span>
+      <span style={{ fontFamily: F.mono, fontWeight: 600, fontSize: 20, color: C.dim }}>{`:: ${type}`}</span>
+    </div>
+  );
+};
+
 const S16: React.FC = () => {
   const L = { x0: 220, x1: 760 };
   const R = { x0: 1150, x1: 1680 };
@@ -222,7 +258,7 @@ const S16: React.FC = () => {
         <A>Ендофунктор</A> – функтор, який відображає категорію в саму себе, зберігаючи тотожні морфізми та композицію.
       </Lead>
       <At x={120} y={330} step={1} size={26} weight={600} color={C.dim}>
-        загальна схема
+        загальна схема: a, b – типи (можуть збігатися)
       </At>
       <Corner p={{ x: L.x0, y: Y.top }} step={1}>
         a
@@ -248,27 +284,19 @@ const S16: React.FC = () => {
       </At>
 
       <At x={1060} y={330} step={4} size={26} weight={600} color={C.dim}>
-        у Haskell: F = Maybe, f = double
+        приклад: <M c={C.dim}>{"double :: Int -> Int"}</M>, тут a = b = Int
       </At>
-      <Corner p={{ x: R.x0, y: Y.top }} step={4} delay={6}>
-        Int
-      </Corner>
-      <Corner p={{ x: R.x1, y: Y.top }} step={4} delay={10}>
-        Int
-      </Corner>
+      <ValCorner p={{ x: R.x0, y: Y.top }} step={4} delay={6} value="5" type="Int" />
+      <ValCorner p={{ x: R.x1, y: Y.top }} step={4} delay={10} value="10" type="Int" />
       <Arrow x1={R.x0 + 64} y1={Y.top} x2={R.x1 - 64} y2={Y.top} step={4} delay={14} dur={12} color={C.mint} />
       <At x={(R.x0 + R.x1) / 2 - 50} y={Y.top - 60} step={4} delay={18} size={30} color={C.mint} font={F.mono}>
         double
       </At>
-      <VDash x={R.x0} y1={Y.top + 36} y2={Y.bot - 36} step={4} delay={24} label="Maybe" />
-      <VDash x={R.x1} y1={Y.top + 36} y2={Y.bot - 36} step={4} delay={28} label="Maybe" />
-      <Corner p={{ x: R.x0, y: Y.bot }} step={4} delay={34} color={C.accentHi}>
-        Maybe Int
-      </Corner>
-      <Corner p={{ x: R.x1, y: Y.bot }} step={4} delay={38} color={C.accentHi}>
-        Maybe Int
-      </Corner>
-      <Arrow x1={R.x0 + 130} y1={Y.bot} x2={R.x1 - 130} y2={Y.bot} step={4} delay={44} dur={12} color={C.pink} />
+      <VDash x={R.x0} y1={Y.top + 48} y2={Y.bot - 48} step={4} delay={24} label="Just" />
+      <VDash x={R.x1} y1={Y.top + 48} y2={Y.bot - 48} step={4} delay={28} label="Just" />
+      <ValCorner p={{ x: R.x0, y: Y.bot }} step={4} delay={34} value="Just 5" type="Maybe Int" color={C.accentHi} />
+      <ValCorner p={{ x: R.x1, y: Y.bot }} step={4} delay={38} value="Just 10" type="Maybe Int" color={C.accentHi} />
+      <Arrow x1={R.x0 + 110} y1={Y.bot} x2={R.x1 - 110} y2={Y.bot} step={4} delay={44} dur={12} color={C.pink} />
       <At x={(R.x0 + R.x1) / 2 - 110} y={Y.bot + 26} step={4} delay={50} size={30} color={C.pink} font={F.mono}>
         fmap double
       </At>
@@ -374,19 +402,11 @@ const S18: React.FC = () => {
       <Lead>
         <A>Моноїд</A> – множина елементів з асоціативною бінарною операцією та нейтральним елементом.
       </Lead>
-      <SyntaxBox
-        x={96}
-        y={320}
-        step={1}
-        size={28}
-        title="Закони моноїду: операція <>, нейтральний елемент mempty"
-        lines={["mempty <> {x} = {x} = {x} <> mempty", "({x} <> {y}) <> {z} = {x} <> ({y} <> {z})"]}
-      />
       <Code
         x={96}
-        y={520}
-        size={36}
-        step={2}
+        y={380}
+        size={40}
+        step={1}
         stagger={10}
         code={`
           0 + x = x = x + 0
@@ -394,13 +414,13 @@ const S18: React.FC = () => {
           (xs ++ ys) ++ zs = xs ++ (ys ++ zs)
         `}
       />
-      <div style={{ position: "absolute", left: X, top: 330, display: "flex", opacity: clamp01(s(3, 0)) }}>
+      <div style={{ position: "absolute", left: X, top: 330, display: "flex", opacity: clamp01(s(2, 0)) }}>
         {cell("множина", W[0], C.dim, true)}
         {cell("операція", W[1], C.dim, true)}
         {cell("нейтральний", W[2], C.dim, true)}
       </div>
       {MONOIDS.map((m, i) => {
-        const p = s(3, 8 + i * 8, POP);
+        const p = s(2, 8 + i * 8, POP);
         return (
           <div
             key={i}
@@ -423,7 +443,7 @@ const S18: React.FC = () => {
           </div>
         );
       })}
-      <At x={96} y={880} w={1720} step={4} size={34} weight={600}>
+      <At x={96} y={720} w={1720} step={3} size={34} weight={600}>
         Асоціативність і нейтральність будуть важливими для пояснення <A>законів монад</A>.
       </At>
     </Slide>
@@ -434,6 +454,6 @@ export const s3Slides: SlideDef[] = [
   { id: "category", title: "Категорія і морфізми", steps: [45, 70, 90, 60, 80, 60], C: S15 },
   { id: "endofunctor", title: "Функтор у теорії категорій", steps: [45, 50, 50, 40, 80, 55], C: S16 },
   { id: "functor-laws", title: "Закони функтора", steps: [45, 80, 50, 150, 55], C: S17 },
-  { id: "monoid", title: "Моноїд", steps: [45, 50, 70, 60, 55], C: S18 },
+  { id: "monoid", title: "Моноїд", steps: [45, 70, 60, 55], C: S18 },
 ];
 
