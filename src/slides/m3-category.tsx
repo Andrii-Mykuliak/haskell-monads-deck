@@ -55,24 +55,29 @@ const Obj: React.FC<{ p: P; label: string; step: number; delay?: number; r?: num
   );
 };
 
-const Loop: React.FC<{ p: P; r: number; step: number; delay?: number; above?: boolean }> = ({ p, r, step, delay = 0, above = true }) => {
+type Side = "up" | "down" | "left" | "right";
+
+const Loop: React.FC<{ p: P; r: number; step: number; delay?: number; side?: Side }> = ({ p, r, step, delay = 0, side = "up" }) => {
   const { lin } = useSteps();
   const k = lin(step, delay, 16);
-  const sy = above ? -1 : 1;
-  const x1 = p.x - 22;
-  const x2 = p.x + 22;
-  const y = p.y + sy * (r - 4);
-  const d = `M ${x1} ${y} C ${x1 - 40} ${y + sy * 90}, ${x2 + 40} ${y + sy * 90}, ${x2} ${y}`;
+  const v = side === "up" || side === "down";
+  const sg = side === "up" || side === "left" ? -1 : 1;
+  const base = r - 4;
+  const s1 = v ? { x: p.x - 22, y: p.y + sg * base } : { x: p.x + sg * base, y: p.y - 22 };
+  const s2 = v ? { x: p.x + 22, y: p.y + sg * base } : { x: p.x + sg * base, y: p.y + 22 };
+  const c1 = v ? { x: s1.x - 40, y: s1.y + sg * 90 } : { x: s1.x + sg * 90, y: s1.y - 40 };
+  const c2 = v ? { x: s2.x + 40, y: s2.y + sg * 90 } : { x: s2.x + sg * 90, y: s2.y + 40 };
+  const d = `M ${s1.x} ${s1.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${s2.x} ${s2.y}`;
+  const head = v
+    ? `${s2.x},${s2.y} ${s2.x + 4},${s2.y + sg * 16} ${s2.x + 14},${s2.y + sg * 8}`
+    : `${s2.x},${s2.y} ${s2.x + sg * 16},${s2.y + 4} ${s2.x + sg * 8},${s2.y + 14}`;
+  const label = v ? { x: p.x, y: p.y + sg * (base + 92) + (sg > 0 ? 8 : 0) } : { x: p.x + sg * (base + 100), y: p.y + 8 };
   const L = 200;
   return (
     <svg width={1920} height={1080} style={{ position: "absolute", left: 0, top: 0 }}>
       <path d={d} stroke={C.faint} strokeWidth={3} fill="none" strokeDasharray={L} strokeDashoffset={L * (1 - k)} />
-      <polygon
-        points={`${x2},${y} ${x2 + 4},${y + sy * 16} ${x2 + 14},${y + sy * 8}`}
-        fill={C.faint}
-        opacity={clamp01(k * 4 - 3)}
-      />
-      <text x={p.x} y={y + sy * 92} fill={C.dim} fontFamily={F.mono} fontSize={22} fontWeight={700} textAnchor="middle" opacity={k}>
+      <polygon points={head} fill={C.faint} opacity={clamp01(k * 4 - 3)} />
+      <text x={label.x} y={label.y} fill={C.dim} fontFamily={F.mono} fontSize={22} fontWeight={700} textAnchor="middle" opacity={k}>
         id
       </text>
     </svg>
@@ -80,9 +85,9 @@ const Loop: React.FC<{ p: P; r: number; step: number; delay?: number; above?: bo
 };
 
 /* 15 · Категорія і морфізми */
-const PA: P = { x: 1090, y: 720 };
-const PB: P = { x: 1440, y: 440 };
-const PC: P = { x: 1790, y: 720 };
+const PA: P = { x: 1080, y: 640 };
+const PB: P = { x: 1400, y: 400 };
+const PC: P = { x: 1720, y: 640 };
 
 const S15: React.FC = () => {
   const ab = trim(PA, PB, 44);
@@ -121,21 +126,33 @@ const S15: React.FC = () => {
       <Obj p={PC} label="c" step={1} delay={16} />
       <Arrow {...ab} step={1} delay={20} dur={14} color={C.mint} width={4} />
       <Arrow {...bc} step={1} delay={34} dur={14} color={C.mint} width={4} />
-      <At x={1210} y={530} step={1} delay={28} size={32} weight={700} color={C.mint} font={F.mono}>
+      <At x={1190} y={470} step={1} delay={28} size={32} weight={700} color={C.mint} font={F.mono}>
         f
       </At>
-      <At x={1640} y={530} step={1} delay={42} size={32} weight={700} color={C.mint} font={F.mono}>
+      <At x={1585} y={470} step={1} delay={42} size={32} weight={700} color={C.mint} font={F.mono}>
         g
       </At>
       <Arrow {...ac} step={2} delay={50} dur={18} color={C.pink} width={4} curve={-60} />
-      <At x={1380} y={800} step={2} delay={60} size={32} weight={700} color={C.pink} font={F.mono}>
+      <At x={1350} y={690} step={2} delay={60} size={32} weight={700} color={C.pink} font={F.mono}>
         g . f
       </At>
-      <Loop p={PA} r={44} step={3} delay={10} above={false} />
-      <Loop p={PB} r={44} step={3} delay={18} />
-      <Loop p={PC} r={44} step={3} delay={26} above={false} />
-      <At x={96} y={880} w={1720} step={4} delay={30} size={34} weight={600}>
-        Типи й функції дають корисну інтерпретацію <A>об’єктів</A> і <A>морфізмів</A> у Haskell.
+      <Loop p={PA} r={44} step={3} delay={10} side="left" />
+      <Loop p={PB} r={44} step={3} delay={18} side="up" />
+      <Loop p={PC} r={44} step={3} delay={26} side="right" />
+      <At x={96} y={812} w={1720} step={4} delay={30} size={28} weight={400} color={C.dim}>
+        Типи й функції дають корисну інтерпретацію об’єктів і морфізмів у Haskell.
+      </At>
+      <At
+        x={96}
+        y={868}
+        w={1728}
+        step={5}
+        size={30}
+        weight={600}
+        style={{ padding: "16px 26px", borderRadius: 14, background: C.panel, borderLeft: `6px solid ${C.accentHi}`, boxSizing: "border-box" }}
+      >
+        <A>Функтор</A> <M>F</M> – відображення між категоріями, яке кожному об’єкту <M>a</M> зіставляє об’єкт <M>F a</M>, а кожному
+        морфізму <M>{"f :: a -> b"}</M> – морфізм <M>{"F f :: F a -> F b"}</M>, зберігаючи тотожні морфізми та композицію.
       </At>
     </Slide>
   );
@@ -414,7 +431,7 @@ const S18: React.FC = () => {
 };
 
 export const s3Slides: SlideDef[] = [
-  { id: "category", title: "Категорія і морфізми", steps: [45, 70, 90, 60, 80], C: S15 },
+  { id: "category", title: "Категорія і морфізми", steps: [45, 70, 90, 60, 80, 60], C: S15 },
   { id: "endofunctor", title: "Функтор у теорії категорій", steps: [45, 50, 50, 40, 80, 55], C: S16 },
   { id: "functor-laws", title: "Закони функтора", steps: [45, 80, 50, 150, 55], C: S17 },
   { id: "monoid", title: "Моноїд", steps: [45, 50, 70, 60, 55], C: S18 },

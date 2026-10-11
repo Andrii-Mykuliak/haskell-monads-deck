@@ -319,120 +319,12 @@ const S12: React.FC = () => (
   </Slide>
 );
 
-/* 13 · Конструктор типу */
-const KINDS = [
-  { ty: "Int", kind: "Type", vals: "5, 42" },
-  { ty: "Maybe", kind: "Type -> Type", vals: "немає" },
-  { ty: "Maybe Int", kind: "Type", vals: "Just 5, Nothing" },
-];
-
-const S13: React.FC = () => {
-  const { s } = useSteps();
-  const level = (y: number, text: string, delay: number) => (
-    <At x={96} y={y} w={300} step={1} delay={delay} size={28} weight={600} color={C.dim}>
-      {text}
-    </At>
-  );
-  const W = [220, 280, 300];
-  const cell = (txt: string, w: number, color: string, head?: boolean) => (
-    <div
-      style={{
-        width: w,
-        paddingLeft: 20,
-        boxSizing: "border-box",
-        fontFamily: head ? F.body : F.mono,
-        fontWeight: head ? 700 : 600,
-        fontSize: head ? 24 : 30,
-        color,
-        whiteSpace: "pre",
-        fontVariantLigatures: "none",
-      }}
-    >
-      {txt}
-    </div>
-  );
-  return (
-    <Slide title="Конструктор типу">
-      <Lead>
-        <A>Конструктор типу</A> – сутність на рівні типів, яка приймає тип як аргумент та утворює інший тип.
-      </Lead>
-      {level(356, "функція", 0)}
-      <Flow
-        x={420}
-        y={330}
-        step={1}
-        delay={6}
-        gap={24}
-        arrowW={200}
-        items={[{ el: <Val color={C.lav}>5</Val> }, { el: <Val>10</Val>, via: "double" }]}
-      />
-      <Code x={1080} y={350} size={34} step={1} delay={30} code={`double :: Int -> Int`} />
-      {level(476, "конструктор типу", 50)}
-      <Flow
-        x={420}
-        y={450}
-        step={1}
-        delay={56}
-        gap={24}
-        arrowW={200}
-        items={[{ el: <Val color={C.lav}>Int</Val> }, { el: <Val>Maybe Int</Val>, via: "Maybe" }]}
-      />
-      <Code x={1080} y={470} size={34} step={1} delay={80} code={`Maybe :: Type -> Type`} />
-      <SyntaxBox
-        x={96}
-        y={590}
-        step={2}
-        title="Вид (kind) – «тип» самого типу"
-        lines={["{ConcreteType} :: Type        -- готовий тип", "{TypeCtor} :: Type -> Type    -- чекає на тип"]}
-      />
-      <div style={{ position: "absolute", left: 1000, top: 590, display: "flex", opacity: clamp01(s(2, 20)) }}>
-        {cell("тип", W[0], C.dim, true)}
-        {cell("вид", W[1], C.dim, true)}
-        {cell("значення", W[2], C.dim, true)}
-      </div>
-      {KINDS.map((r, i) => {
-        const p = s(2, 30 + i * 12, POP);
-        const ctor = r.ty === "Maybe";
-        return (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              left: 1000,
-              top: 636 + i * 70,
-              height: 60,
-              display: "flex",
-              alignItems: "center",
-              borderRadius: 12,
-              background: ctor ? "rgba(242,193,125,0.08)" : i % 2 ? "transparent" : C.panel,
-              border: ctor ? `2px solid ${C.amber}` : "2px solid transparent",
-              boxSizing: "border-box",
-              opacity: clamp01(p),
-              transform: `translateX(${(1 - p) * 30}px)`,
-            }}
-          >
-            {cell(r.ty, W[0], C.lav)}
-            {cell(r.kind, W[1], ctor ? C.amber : C.text)}
-            {cell(r.vals, W[2], ctor ? C.faint : C.mint)}
-          </div>
-        );
-      })}
-      <At x={96} y={880} w={1720} step={3} size={34} weight={600}>
-        Сам <M>Maybe</M> ще не тип значень: значення мають лише готові типи <M>Maybe Int</M>, <M>Maybe String</M> тощо.
-      </At>
-      <At x={96} y={950} w={1720} step={3} delay={20} size={26} weight={400} color={C.dim}>
-        У GHCi команда <M c={C.dim}>:kind Maybe</M> показує вид; <M c={C.dim}>Type</M> там друкується як <M c={C.dim}>*</M>.
-      </At>
-    </Slide>
-  );
-};
-
-/* 13b · Functor потребує конструктора типу */
-const S13b: React.FC = () => (
+/* 13 · Functor потребує конструктора типу */
+const S13: React.FC = () => (
   <Slide title="Functor і конструктор типу">
     <Lead>
-      У класі <M>Functor</M> змінна <M>f</M> застосовується до інших типів (<M>f a</M>, <M>f b</M>), тому <M>f</M> – конструктор типу виду{" "}
-      <M>{"Type -> Type"}</M>.
+      <A>Конструктор типу</A> (наприклад, <M>Maybe</M>) приймає тип і утворює інший тип. У класі <M>Functor</M> змінна <M>f</M> – саме
+      такий конструктор: її застосовують до <M>a</M> і <M>b</M>.
     </Lead>
     <Code
       x={96}
@@ -616,7 +508,6 @@ export const s2Slides: SlideDef[] = [
   { id: "boilerplate", title: "Повторення службової логіки", steps: [55, 50, 50, 80, 90, 70], C: S10 },
   { id: "functor", title: "Функтор і fmap", steps: [45, 110, 100, 55], C: S11 },
   { id: "fmap-contexts", title: "fmap у різних контекстах", steps: [45, 60, 60, 60, 80, 55], C: S12 },
-  { id: "type-ctor", title: "Конструктор типу", steps: [45, 110, 90, 60], C: S13 },
-  { id: "functor-kind", title: "Functor і конструктор типу", steps: [55, 50, 80, 110, 90], C: S13b },
+  { id: "functor-kind", title: "Functor і конструктор типу", steps: [55, 50, 80, 110, 90], C: S13 },
   { id: "tree", title: "Функтор для дерева", steps: [45, 70, 60, 70, 110, 55], C: S14 },
 ];
