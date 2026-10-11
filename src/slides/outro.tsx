@@ -5,36 +5,55 @@ import { POP, SlideDef, useSteps } from "../deck/steps";
 import { At } from "../deck/ui";
 import { clamp01, useClock } from "./common";
 
-/* Final slide: Maybe as a two-track railway. Values stream along the Just track through three gates;
-   a value that fails `positive` is switched to the Nothing track and skips the rest. Runs continuously. */
+/* Final slide: Maybe as a two-track railway. Values drive into three stations, get processed and drive on;
+   a value that fails `positive` leaves the station downwards onto the Nothing track. Runs continuously. */
 
-const X0 = 1000;
-const X1 = 1700;
-const TOP = 470;
-const BOT = 700;
-const GATES = [
-  { x: 1170, name: "positive" },
-  { x: 1380, name: "inc" },
-  { x: 1580, name: "double" },
+const X0 = 980;
+const X1 = 1730;
+const TOP = 480;
+const BOT = 730;
+const BOX_W = 150;
+const BOX_H = 120;
+const STATIONS = [
+  { x: 1130, name: "positive", op: "x > 0 ?" },
+  { x: 1360, name: "inc", op: "x + 1" },
+  { x: 1590, name: "double", op: "x * 2" },
 ];
 const VALUES = [3, -2, 5, 1, -7, 4, 0, 6, -1, 2, 8, -3];
 const START = 2.4;
-const PERIOD = 1.25;
-const SPEED = 190;
-const DROP = 0.55;
-const SWITCH_X = GATES[0].x;
-const LAND_X = SWITCH_X + 90;
-const TOP_TIME = (X1 - X0) / SPEED;
-const FAIL_AT = (SWITCH_X - X0) / SPEED;
-const FAIL_END = FAIL_AT + DROP + (X1 - LAND_X) / SPEED;
+const PERIOD = 1.6;
+const SPEED = 230;
+const DWELL = 0.7;
+const DROP = 0.6;
+const LAND_X = STATIONS[0].x + 110;
 const BURST = 0.9;
 const DONE_AT = 130;
 
-type Tok = { x: number; y: number; label: string; fail: boolean; nothing: boolean };
+/** When the token reaches station i (arrive) and leaves it (leave), relative to its spawn. */
+const ARRIVE = STATIONS.map((st, i) => (st.x - X0) / SPEED + i * DWELL);
+const LEAVE = ARRIVE.map((a) => a + DWELL);
+const END_OK = LEAVE[2] + (X1 - STATIONS[2].x) / SPEED;
+const DROP_AT = LEAVE[0];
+const END_FAIL = DROP_AT + DROP + (X1 - LAND_X) / SPEED;
+
+type Tok = { x: number; y: number; label: string; color: string; nothing: boolean; scale: number };
 
 const easeInOut = (p: number) => (p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2);
+const pulse = (p: number) => 1 + 0.28 * Math.sin(Math.PI * clamp01((p - 0.4) / 0.25));
 
-const valueAt = (v: number, x: number) => (x < GATES[1].x ? v : x < GATES[2].x ? v + 1 : (v + 1) * 2);
+const xOnTop = (age: number) => {
+  for (let i = 0; i < STATIONS.length; i++) {
+    const from = i === 0 ? X0 : STATIONS[i - 1].x;
+    const t0 = i === 0 ? 0 : LEAVE[i - 1];
+    if (age < ARRIVE[i]) {
+      return from + (age - t0) * SPEED;
+    }
+    if (age < LEAVE[i]) {
+      return STATIONS[i].x;
+    }
+  }
+  return STATIONS[2].x + (age - LEAVE[2]) * SPEED;
+};
 
 const tokenAt = (k: number, t: number): Tok | null => {
   const age = t - (START + k * PERIOD);
@@ -43,23 +62,29 @@ const tokenAt = (k: number, t: number): Tok | null => {
   }
   const v = VALUES[k % VALUES.length];
   if (v > 0) {
-    if (age > TOP_TIME) {
+    if (age > END_OK) {
       return null;
     }
-    const x = X0 + age * SPEED;
-    return { x, y: TOP, label: String(valueAt(v, x)), fail: false, nothing: false };
+    const mid1 = ARRIVE[1] + DWELL * 0.5;
+    const mid2 = ARRIVE[2] + DWELL * 0.5;
+    const label = age < mid1 ? v : age < mid2 ? v + 1 : (v + 1) * 2;
+    const p1 = (age - ARRIVE[1]) / DWELL;
+    const p2 = (age - ARRIVE[2]) / DWELL;
+    return { x: xOnTop(age), y: TOP, label: String(label), color: C.mint, nothing: false, scale: pulse(p1) * pulse(p2) };
   }
-  if (age < FAIL_AT) {
-    return { x: X0 + age * SPEED, y: TOP, label: String(v), fail: true, nothing: false };
+  if (age < DROP_AT) {
+    const verdict = age > ARRIVE[0] + DWELL * 0.7;
+    return { x: xOnTop(age), y: TOP, label: String(v), color: verdict ? C.red : C.amber, nothing: false, scale: 1 };
   }
-  if (age < FAIL_AT + DROP) {
-    const p = easeInOut((age - FAIL_AT) / DROP);
-    return { x: SWITCH_X + (LAND_X - SWITCH_X) * p, y: TOP + (BOT - TOP) * p, label: p < 0.5 ? String(v) : "Nothing", fail: true, nothing: p >= 0.5 };
+  if (age < DROP_AT + DROP) {
+    const p = easeInOut((age - DROP_AT) / DROP);
+    const x = STATIONS[0].x + (LAND_X - STATIONS[0].x) * p;
+    return { x, y: TOP + (BOT - TOP) * p, label: "Nothing", color: C.faint, nothing: true, scale: 1 };
   }
-  if (age > FAIL_END) {
+  if (age > END_FAIL) {
     return null;
   }
-  return { x: LAND_X + (age - FAIL_AT - DROP) * SPEED, y: BOT, label: "Nothing", fail: true, nothing: true };
+  return { x: LAND_X + (age - DROP_AT - DROP) * SPEED, y: BOT, label: "Nothing", color: C.faint, nothing: true, scale: 1 };
 };
 
 const rnd = (n: number) => {
@@ -112,31 +137,31 @@ const Result: React.FC<{ x: number; y: number; dt: number; color: string; label:
         transformOrigin: "left center",
         display: "inline-flex",
         alignItems: "center",
-        gap: 10,
-        padding: "8px 14px",
-        borderRadius: 16,
+        gap: 8,
+        padding: "6px 12px",
+        borderRadius: 14,
         border: `3px ${empty ? "dashed" : "solid"} ${empty ? color : C.accentHi}`,
         background: C.bg,
         boxShadow: empty ? undefined : `0 0 ${24 * (1 - p) + 10}px rgba(134,224,168,${0.25 + 0.35 * (1 - p)})`,
         whiteSpace: "nowrap",
       }}
     >
-      <span style={{ fontFamily: F.mono, fontWeight: 700, fontSize: 24, color: empty ? color : C.accentHi }}>{label}</span>
+      <span style={{ fontFamily: F.mono, fontWeight: 700, fontSize: 22, color: empty ? color : C.accentHi }}>{label}</span>
       {!empty && (
         <span
           style={{
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
-            minWidth: 40,
-            height: 40,
-            padding: "0 8px",
-            borderRadius: 10,
+            minWidth: 36,
+            height: 36,
+            padding: "0 6px",
+            borderRadius: 9,
             border: `2px solid ${color}`,
             background: `${color}22`,
             fontFamily: F.mono,
             fontWeight: 700,
-            fontSize: 24,
+            fontSize: 22,
             color,
           }}
         >
@@ -146,6 +171,8 @@ const Result: React.FC<{ x: number; y: number; dt: number; color: string; label:
     </div>
   );
 };
+
+type StationState = { active: number; progress: number; verdict: number; ok: boolean };
 
 const Outro: React.FC = () => {
   const { s, frame: f, fps } = useSteps();
@@ -166,43 +193,46 @@ const Outro: React.FC = () => {
     });
 
   const kLast = Math.floor((t - START) / PERIOD);
-  const kFirst = Math.max(0, kLast - Math.ceil((FAIL_END + BURST) / PERIOD) - 1);
+  const kFirst = Math.max(0, kLast - Math.ceil((Math.max(END_OK, END_FAIL) + BURST) / PERIOD) - 1);
   const ks: number[] = [];
   for (let k = kFirst; k <= kLast; k++) {
     ks.push(k);
   }
   const toks = ks.map((k) => ({ k, tok: tokenAt(k, t) }));
 
-  const gateHot = GATES.map((g, gi) => {
-    let hot = 0;
-    let ring = -1;
+  const stations: StationState[] = STATIONS.map((_, i) => {
+    let st: StationState = { active: 0, progress: -1, verdict: 0, ok: true };
     for (const k of ks) {
-      const age = t - (START + k * PERIOD);
       const v = VALUES[k % VALUES.length];
-      if (gi > 0 && v <= 0) {
+      if (i > 0 && v <= 0) {
         continue;
       }
-      const dt = age - (g.x - X0) / SPEED;
-      hot = Math.max(hot, clamp01(1 - Math.abs(dt) / 0.3));
-      if (v > 0 && dt >= 0 && dt < 0.6) {
-        ring = dt / 0.6;
+      const age = t - (START + k * PERIOD);
+      const rel = age - ARRIVE[i];
+      const active = clamp01(Math.min((rel + 0.15) / 0.15, (DWELL + 0.25 - rel) / 0.25));
+      if (active > st.active) {
+        st = { active, progress: clamp01(rel / DWELL), verdict: 0, ok: v > 0 };
+      }
+      if (i === 0 && rel > DWELL * 0.7 && rel < DWELL + 0.6) {
+        st.verdict = Math.max(st.verdict, clamp01(1 - (rel - DWELL * 0.7 - 0.5) / 0.3));
+        st.ok = v > 0;
       }
     }
-    return { hot, ring };
+    return st;
   });
 
-  const failFlash = ks.reduce((m, k) => {
+  const dropFlash = ks.reduce((m, k) => {
     if (VALUES[k % VALUES.length] > 0) {
       return m;
     }
-    const dt = t - (START + k * PERIOD) - FAIL_AT;
-    return dt >= 0 && dt < 0.7 ? Math.max(m, 1 - dt / 0.7) : m;
+    const dt = t - (START + k * PERIOD) - DROP_AT;
+    return dt >= 0 && dt < 0.8 ? Math.max(m, 1 - dt / 0.8) : m;
   }, 0);
 
   const arrivals = ks
     .map((k) => {
       const v = VALUES[k % VALUES.length];
-      return { k, v, dt: t - (START + k * PERIOD + (v > 0 ? TOP_TIME : FAIL_END)) };
+      return { k, v, dt: t - (START + k * PERIOD + (v > 0 ? END_OK : END_FAIL)) };
     })
     .filter((a) => a.dt >= 0);
   const lastJust = [...arrivals].reverse().find((a) => a.v > 0);
@@ -216,7 +246,7 @@ const Outro: React.FC = () => {
 
   return (
     <AbsoluteFill style={{ background: C.bg, overflow: "hidden" }}>
-      <AbsoluteFill style={{ background: `radial-gradient(ellipse at 72% 46%, rgba(134,224,168,0.10) 0%, rgba(141,118,220,0.10) 30%, ${C.bg} 62%)` }} />
+      <AbsoluteFill style={{ background: `radial-gradient(ellipse at 72% 48%, rgba(134,224,168,0.10) 0%, rgba(141,118,220,0.10) 30%, ${C.bg} 62%)` }} />
       <svg width={1920} height={1080} style={{ position: "absolute", left: 0, top: 0 }}>
         {DUST.map((d, i) => (
           <circle
@@ -260,11 +290,11 @@ const Outro: React.FC = () => {
         }}
       >
         {codePart("pure x >>= ", 0)}
-        {codePart("positive", gateHot[0].hot)}
+        {codePart("positive", stations[0].active)}
         {codePart(" >>= ", 0)}
-        {codePart("inc", gateHot[1].hot)}
+        {codePart("inc", stations[1].active)}
         {codePart(" >>= ", 0)}
-        {codePart("double", gateHot[2].hot)}
+        {codePart("double", stations[2].active)}
       </div>
 
       <svg width={1920} height={1080} style={{ position: "absolute", left: 0, top: 0 }}>
@@ -310,87 +340,128 @@ const Outro: React.FC = () => {
             strokeDashoffset={-t * 60}
           />
           <path
-            d={`M ${SWITCH_X} ${TOP} C ${SWITCH_X + 10} ${TOP + 120}, ${LAND_X - 10} ${BOT - 80}, ${LAND_X} ${BOT}`}
+            d={`M ${STATIONS[0].x} ${TOP + BOX_H / 2} C ${STATIONS[0].x} ${TOP + 150}, ${LAND_X - 10} ${BOT - 70}, ${LAND_X} ${BOT}`}
             stroke={C.red}
-            strokeWidth={3 + 3 * failFlash}
-            strokeOpacity={0.35 + 0.65 * failFlash}
+            strokeWidth={3 + 3 * dropFlash}
+            strokeOpacity={0.35 + 0.65 * dropFlash}
             fill="none"
             strokeDasharray="6 8"
-            filter={failFlash > 0.05 ? "url(#glow)" : undefined}
+            filter={dropFlash > 0.05 ? "url(#glow)" : undefined}
           />
-          {GATES.map((g, i) => {
-            const h = gateHot[i].hot;
-            const red = i === 0 ? failFlash : 0;
-            const color = red > 0.1 ? C.red : h > 0.05 ? C.amber : "#59627d";
-            return (
-              <rect
-                key={i}
-                x={g.x - 4}
-                y={TOP - 34}
-                width={8}
-                height={68}
-                rx={4}
-                fill={color}
-                filter={h > 0.05 || red > 0.1 ? "url(#glow)" : undefined}
-                opacity={s(0, 50 + i * 6)}
-              />
-            );
-          })}
-          {GATES.map((g, i) =>
-            gateHot[i].ring >= 0 ? <Burst key={`r${i}`} x={g.x} y={TOP} p={gateHot[i].ring} color={C.amber} seed={i + 1} n={8} reach={34} /> : null,
-          )}
-          {failFlash > 0 && <Burst x={SWITCH_X} y={TOP} p={1 - failFlash} color={C.red} seed={99} n={12} reach={60} />}
           {toks.map(({ k, tok }) =>
             tok && tok.y === TOP ? (
-              <rect key={`t${k}`} x={tok.x - 110} y={TOP - 3} width={100} height={6} rx={3} fill={tok.fail ? "url(#trailN)" : "url(#trailJ)"} />
+              <rect key={`t${k}`} x={tok.x - 110} y={TOP - 3} width={100} height={6} rx={3} fill={tok.color === C.mint ? "url(#trailJ)" : "url(#trailN)"} />
             ) : tok && tok.y === BOT ? (
-              <rect key={`t${k}`} x={tok.x - 130} y={BOT - 2} width={100} height={4} rx={2} fill="url(#trailN)" />
+              <rect key={`t${k}`} x={tok.x - 140} y={BOT - 2} width={100} height={4} rx={2} fill="url(#trailN)" />
             ) : null,
           )}
-          {arrivals
-            .filter((a) => a.dt < BURST)
-            .map((a) => (
-              <Burst
-                key={`b${a.k}`}
-                x={X1}
-                y={a.v > 0 ? TOP : BOT}
-                p={a.dt / BURST}
-                color={a.v > 0 ? C.mint : "#7b6f8f"}
-                seed={a.k + 7}
-                n={a.v > 0 ? 18 : 8}
-                reach={a.v > 0 ? 90 : 40}
-              />
-            ))}
         </g>
       </svg>
 
-      <At x={X0} y={TOP - 84} step={0} delay={44} size={24} weight={700} color={C.mint} font={F.mono}>
+      <At x={X0} y={TOP - 96} step={0} delay={44} size={24} weight={700} color={C.mint} font={F.mono}>
         Just
       </At>
       <At x={X0} y={BOT - 64} step={0} delay={50} size={24} weight={700} color={C.red} font={F.mono} style={{ opacity: 0.7 }}>
         Nothing
       </At>
-      {GATES.map((g, i) => {
-        const h = gateHot[i].hot;
-        const red = i === 0 ? failFlash : 0;
+
+      {STATIONS.map((st, i) => {
+        const a = s(0, 50 + i * 8, POP);
+        const S = stations[i];
+        const hot = S.active;
+        const fail = i === 0 && S.verdict > 0 && !S.ok;
+        const edge = fail ? C.red : hot > 0.05 ? C.amber : C.line;
         return (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              left: g.x,
-              top: TOP - 82,
-              transform: `translateX(-50%) scale(${1 + 0.12 * Math.max(h, red)})`,
-              fontFamily: F.mono,
-              fontWeight: 700,
-              fontSize: 24,
-              color: red > 0.1 ? C.red : h > 0.05 ? C.amber : C.dim,
-              textShadow: h > 0.05 ? `0 0 ${12 * h}px rgba(242,193,125,0.9)` : undefined,
-              opacity: s(0, 50 + i * 6),
-            }}
-          >
-            {g.name}
-          </div>
+          <React.Fragment key={st.name}>
+            <div
+              style={{
+                position: "absolute",
+                left: st.x,
+                top: TOP - BOX_H / 2 - 40,
+                transform: "translateX(-50%)",
+                fontFamily: F.mono,
+                fontWeight: 700,
+                fontSize: 26,
+                color: hot > 0.05 ? C.amber : C.text,
+                textShadow: hot > 0.05 ? `0 0 ${12 * hot}px rgba(242,193,125,0.9)` : undefined,
+                opacity: clamp01(a),
+                whiteSpace: "nowrap",
+              }}
+            >
+              {st.name}
+            </div>
+            <div
+              style={{
+                position: "absolute",
+                left: st.x - BOX_W / 2,
+                top: TOP - BOX_H / 2,
+                width: BOX_W,
+                height: BOX_H,
+                borderRadius: 20,
+                border: `3px solid ${edge}`,
+                background: `linear-gradient(180deg, rgba(242,193,125,${0.1 * hot}) 0%, rgba(33,39,56,0.96) 70%)`,
+                boxShadow: hot > 0.05 ? `0 0 ${30 * hot}px ${fail ? "rgba(239,107,107,0.6)" : "rgba(242,193,125,0.45)"}` : "0 8px 24px rgba(0,0,0,0.35)",
+                boxSizing: "border-box",
+                opacity: clamp01(a),
+                transform: `scale(${(0.8 + 0.2 * a) * (1 + 0.04 * hot)})`,
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  right: 0,
+                  top: 6,
+                  textAlign: "center",
+                  fontFamily: F.mono,
+                  fontWeight: 600,
+                  fontSize: 18,
+                  color: hot > 0.05 ? C.amber : C.dim,
+                  fontVariantLigatures: "none",
+                }}
+              >
+                {st.op}
+              </div>
+              <div
+                style={{
+                  position: "absolute",
+                  left: 12,
+                  bottom: 10,
+                  height: 6,
+                  width: (BOX_W - 30) * (S.progress >= 0 ? S.progress : 0),
+                  borderRadius: 3,
+                  background: fail ? C.red : C.amber,
+                  opacity: hot,
+                }}
+              />
+            </div>
+            {i === 0 && S.verdict > 0 && (
+              <div
+                style={{
+                  position: "absolute",
+                  left: st.x + BOX_W / 2 - 18,
+                  top: TOP - BOX_H / 2 - 18,
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  background: S.ok ? C.mint : C.red,
+                  color: C.bg,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontFamily: F.body,
+                  fontWeight: 900,
+                  fontSize: 24,
+                  opacity: S.verdict,
+                  transform: `scale(${0.6 + 0.4 * S.verdict})`,
+                  boxShadow: `0 0 16px ${S.ok ? "rgba(134,224,168,0.7)" : "rgba(239,107,107,0.7)"}`,
+                }}
+              >
+                {S.ok ? "✓" : "✗"}
+              </div>
+            )}
+          </React.Fragment>
         );
       })}
 
@@ -398,7 +469,6 @@ const Outro: React.FC = () => {
         if (!tok) {
           return null;
         }
-        const color = tok.nothing ? C.faint : tok.fail ? C.amber : C.mint;
         return (
           <div
             key={k}
@@ -406,7 +476,7 @@ const Outro: React.FC = () => {
               position: "absolute",
               left: tok.x,
               top: tok.y,
-              transform: `translate(-50%, -50%) scale(${tok.nothing ? 0.85 : 1})`,
+              transform: `translate(-50%, -50%) scale(${(tok.nothing ? 0.85 : 1) * tok.scale})`,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -414,13 +484,13 @@ const Outro: React.FC = () => {
               height: 54,
               padding: "0 12px",
               borderRadius: 12,
-              border: `3px ${tok.nothing ? "dashed" : "solid"} ${color}`,
-              background: tok.nothing ? C.bg : `linear-gradient(${color}2a, ${color}2a), ${C.bg}`,
-              boxShadow: tok.nothing ? undefined : `0 0 18px ${color}88`,
+              border: `3px ${tok.nothing ? "dashed" : "solid"} ${tok.color}`,
+              background: tok.nothing ? C.bg : `linear-gradient(${tok.color}2a, ${tok.color}2a), ${C.bg}`,
+              boxShadow: tok.nothing ? undefined : `0 0 ${18 * tok.scale}px ${tok.color}88`,
               fontFamily: F.mono,
               fontWeight: 700,
               fontSize: tok.nothing ? 22 : 30,
-              color,
+              color: tok.color,
               boxSizing: "border-box",
               whiteSpace: "nowrap",
             }}
@@ -430,10 +500,42 @@ const Outro: React.FC = () => {
         );
       })}
 
-      {lastJust && <Result x={X1 + 30} y={TOP} dt={lastJust.dt} color={C.mint} label="Just" value={String((lastJust.v + 1) * 2)} />}
-      {lastNothing && <Result x={X1 + 30} y={BOT} dt={lastNothing.dt} color={C.faint} label="Nothing" />}
+      <svg width={1920} height={1080} style={{ position: "absolute", left: 0, top: 0, pointerEvents: "none" }}>
+        {ks.map((k) => {
+          const v = VALUES[k % VALUES.length];
+          const age = t - (START + k * PERIOD);
+          return STATIONS.map((st, i) => {
+            if (i > 0 && v <= 0) {
+              return null;
+            }
+            const p = (age - ARRIVE[i] - DWELL * 0.45) / 0.6;
+            if (p < 0 || p > 1) {
+              return null;
+            }
+            const color = i === 0 ? (v > 0 ? C.mint : C.red) : C.amber;
+            return <Burst key={`s${k}-${i}`} x={st.x} y={TOP} p={p} color={color} seed={k * 3 + i} n={10} reach={44} />;
+          });
+        })}
+        {arrivals
+          .filter((a) => a.dt < BURST)
+          .map((a) => (
+            <Burst
+              key={`b${a.k}`}
+              x={X1}
+              y={a.v > 0 ? TOP : BOT}
+              p={a.dt / BURST}
+              color={a.v > 0 ? C.mint : "#7b6f8f"}
+              seed={a.k + 7}
+              n={a.v > 0 ? 18 : 8}
+              reach={a.v > 0 ? 90 : 40}
+            />
+          ))}
+      </svg>
 
-      <At x={X0} y={800} w={860} step={0} delay={DONE_AT - 10} size={26} weight={600} color={C.dim}>
+      {lastJust && <Result x={X1 + 16} y={TOP} dt={lastJust.dt} color={C.mint} label="Just" value={String((lastJust.v + 1) * 2)} />}
+      {lastNothing && <Result x={X1 + 16} y={BOT} dt={lastNothing.dt} color={C.faint} label="Nothing" />}
+
+      <At x={X0} y={820} w={860} step={0} delay={DONE_AT - 10} size={26} weight={600} color={C.dim}>
         Один невдалий крок – і решта ланцюжка пропускається без жодної перевірки вручну.
       </At>
 
@@ -457,4 +559,4 @@ const Outro: React.FC = () => {
   );
 };
 
-export const outroSlide: SlideDef = { id: "thanks", title: "Дякую за увагу", steps: [DONE_AT + 120], C: Outro };
+export const outroSlide: SlideDef = { id: "thanks", title: "Дякую за увагу", steps: [DONE_AT + 280], C: Outro };

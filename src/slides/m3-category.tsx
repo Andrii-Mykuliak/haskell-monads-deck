@@ -57,7 +57,14 @@ const Obj: React.FC<{ p: P; label: string; step: number; delay?: number; r?: num
 
 type Side = "up" | "down" | "left" | "right";
 
-const Loop: React.FC<{ p: P; r: number; step: number; delay?: number; side?: Side }> = ({ p, r, step, delay = 0, side = "up" }) => {
+const Loop: React.FC<{ p: P; r: number; step: number; delay?: number; side?: Side; label?: string }> = ({
+  p,
+  r,
+  step,
+  delay = 0,
+  side = "up",
+  label: text = "id",
+}) => {
   const { lin } = useSteps();
   const k = lin(step, delay, 16);
   const v = side === "up" || side === "down";
@@ -78,81 +85,292 @@ const Loop: React.FC<{ p: P; r: number; step: number; delay?: number; side?: Sid
       <path d={d} stroke={C.faint} strokeWidth={3} fill="none" strokeDasharray={L} strokeDashoffset={L * (1 - k)} />
       <polygon points={head} fill={C.faint} opacity={clamp01(k * 4 - 3)} />
       <text x={label.x} y={label.y} fill={C.dim} fontFamily={F.mono} fontSize={22} fontWeight={700} textAnchor="middle" opacity={k}>
-        id
+        {text}
       </text>
     </svg>
   );
 };
 
-/* 15 · Категорія і морфізми */
+/** A type drawn as a pill centred on `p`. */
+const TypeNode: React.FC<{ p: P; label: string; step: number; delay?: number; color?: string }> = ({ p, label, step, delay = 0, color = C.lav }) => {
+  const { s } = useSteps();
+  const a = s(step, delay, POP);
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: p.x,
+        top: p.y,
+        transform: `translate(-50%, -50%) scale(${0.7 + 0.3 * a})`,
+        opacity: clamp01(a),
+      }}
+    >
+      <Chip size={30} color={color} border={color}>
+        {label}
+      </Chip>
+    </div>
+  );
+};
+
+const ArrowLabel: React.FC<{ x: number; y: number; step: number; delay?: number; color?: string; children: React.ReactNode }> = ({
+  x,
+  y,
+  step,
+  delay = 0,
+  color = C.mint,
+  children,
+}) => (
+  <At x={x} y={y} step={step} delay={delay} size={28} weight={700} color={color} font={F.mono} style={{ fontVariantLigatures: "none" }}>
+    {children}
+  </At>
+);
+
+/* 15a · Об’єкти і морфізми */
+const T_INT: P = { x: 1110, y: 470 };
+const T_BOOL: P = { x: 1690, y: 470 };
+const T_STR: P = { x: 1400, y: 730 };
+
+const SMorphism: React.FC = () => (
+  <Slide title="Об’єкти і морфізми">
+    <Lead>
+      <A>Морфізм</A> – стрілка <M>{"f : a -> b"}</M> від об’єкта <M>a</M> (джерела) до об’єкта <M>b</M> (цілі). Об’єкти – це «точки», морфізми –
+      «шляхи» між ними.
+    </Lead>
+    <Obj p={{ x: 220, y: 450 }} label="a" step={1} />
+    <Obj p={{ x: 700, y: 450 }} label="b" step={1} delay={10} />
+    <Arrow x1={272} y1={450} x2={648} y2={450} step={1} delay={18} dur={16} color={C.mint} width={4} />
+    <ArrowLabel x={450} y={386} step={1} delay={24}>
+      f
+    </ArrowLabel>
+    <At x={160} y={510} step={1} delay={30} size={24} weight={600} color={C.dim}>
+      джерело
+    </At>
+    <At x={660} y={510} step={1} delay={34} size={24} weight={600} color={C.dim}>
+      ціль
+    </At>
+
+    <At x={1000} y={330} step={2} size={26} weight={600} color={C.dim}>
+      у Haskell: об’єкти – типи, морфізми – функції
+    </At>
+    <TypeNode p={T_INT} label="Int" step={2} delay={6} />
+    <TypeNode p={T_BOOL} label="Bool" step={2} delay={10} />
+    <TypeNode p={T_STR} label="String" step={2} delay={14} />
+    <Arrow x1={T_INT.x + 56} y1={T_INT.y} x2={T_BOOL.x - 66} y2={T_BOOL.y} step={2} delay={24} dur={14} color={C.mint} width={4} />
+    <ArrowLabel x={1360} y={410} step={2} delay={30}>
+      even
+    </ArrowLabel>
+    <Arrow x1={T_INT.x - 10} y1={T_INT.y + 34} x2={T_STR.x - 72} y2={T_STR.y - 26} step={2} delay={44} dur={14} color={C.mint} width={4} curve={40} />
+    <ArrowLabel x={1130} y={620} step={2} delay={50}>
+      show
+    </ArrowLabel>
+    <Arrow x1={T_STR.x - 24} y1={T_STR.y - 34} x2={T_INT.x + 44} y2={T_INT.y + 34} step={2} delay={64} dur={14} color={C.mint} width={4} curve={40} />
+    <ArrowLabel x={1300} y={540} step={2} delay={70}>
+      length
+    </ArrowLabel>
+    <Loop p={T_BOOL} r={58} step={2} delay={84} side="right" label="not" />
+
+    <At x={96} y={620} w={820} step={3} size={30} weight={600}>
+      об’єкт ↔ тип: <M>Int</M>, <M>Bool</M>, <M>String</M>
+    </At>
+    <At x={96} y={680} w={820} step={3} delay={14} size={30} weight={600}>
+      морфізм ↔ функція: <M>{"even :: Int -> Bool"}</M>
+    </At>
+    <At x={96} y={880} w={1720} step={4} size={32} weight={600}>
+      Морфізм не мусить змінювати тип: <M>{"not :: Bool -> Bool"}</M> – теж морфізм. Важливо лише, звідки і куди веде стрілка.
+    </At>
+  </Slide>
+);
+
+/* 15b · Категорія */
 const PA: P = { x: 1080, y: 640 };
 const PB: P = { x: 1400, y: 400 };
 const PC: P = { x: 1720, y: 640 };
 
-const S15: React.FC = () => {
+const ITEMS: React.ReactNode[] = [
+  <>
+    <b>Об’єкти</b>: <M>a</M>, <M>b</M>, <M>c</M>
+  </>,
+  <>
+    <b>Морфізми</b> між ними: <M>{"f : a -> b"}</M>, <M>{"g : b -> c"}</M>
+  </>,
+  <>
+    <b>Композиція</b>: <M>{"g . f : a -> c"}</M> – спочатку <M>f</M>, потім <M>g</M>
+  </>,
+  <>
+    <b>Тотожний морфізм</b> <M>{"id : a -> a"}</M> для кожного об’єкта
+  </>,
+];
+
+const SCategory: React.FC = () => {
   const ab = trim(PA, PB, 44);
   const bc = trim(PB, PC, 44);
   const ac = trim(PA, PC, 44);
   return (
-    <Slide title="Категорія і морфізми">
+    <Slide title="Категорія">
       <Lead>
-        <A>Категорія</A> – сукупність об’єктів і морфізмів, для яких визначено асоціативну композицію та тотожні морфізми.
+        <A>Категорія</A> – об’єкти, морфізми між ними та правило, за яким морфізми компонуються. Вона складається з чотирьох частин:
       </Lead>
+      {ITEMS.map((it, i) => (
+        <At key={i} x={96} y={330 + i * 70} w={880} step={i + 1} size={30} weight={400} dir="left">
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 40,
+              height: 40,
+              marginRight: 16,
+              borderRadius: 20,
+              background: i % 2 ? "#5e5086" : C.pink,
+              fontWeight: 800,
+              fontSize: 24,
+              verticalAlign: "middle",
+            }}
+          >
+            {i + 1}
+          </span>
+          {it}
+        </At>
+      ))}
+      <SyntaxBox x={96} y={630} w={820} step={3} delay={40} title="Композиція в Haskell" lines={["({g} . {f}) {x} = {g} ({f} {x})"]} />
+      <At x={96} y={770} step={5} size={28} weight={700} color={C.accentHi}>
+        Закони
+      </At>
       <Code
         x={96}
-        y={330}
-        size={36}
-        step={1}
+        y={810}
+        size={28}
+        step={5}
+        delay={8}
         code={`
-          f :: a -> b
-          g :: b -> c
-          @2+44 (g . f) :: a -> c
-          @3 id      :: a -> a
-        `}
-      />
-      <SyntaxBox x={96} y={560} w={820} step={2} title="Композиція" lines={["({g} . {f}) {x} = {g} ({f} {x})"]} />
-      <Code
-        x={96}
-        y={700}
-        size={30}
-        step={4}
-        code={`
-          h . (g . f) = (h . g) . f
-          id . f = f = f . id
+          h . (g . f) = (h . g) . f   -- асоціативність
+          id . f = f = f . id         -- нейтральність id
         `}
       />
       <Obj p={PA} label="a" step={1} />
       <Obj p={PB} label="b" step={1} delay={8} />
       <Obj p={PC} label="c" step={1} delay={16} />
-      <Arrow {...ab} step={1} delay={20} dur={14} color={C.mint} width={4} />
-      <Arrow {...bc} step={1} delay={34} dur={14} color={C.mint} width={4} />
-      <At x={1190} y={470} step={1} delay={28} size={32} weight={700} color={C.mint} font={F.mono}>
+      <Arrow {...ab} step={2} delay={6} dur={14} color={C.mint} width={4} />
+      <Arrow {...bc} step={2} delay={20} dur={14} color={C.mint} width={4} />
+      <ArrowLabel x={1190} y={470} step={2} delay={14}>
         f
-      </At>
-      <At x={1585} y={470} step={1} delay={42} size={32} weight={700} color={C.mint} font={F.mono}>
+      </ArrowLabel>
+      <ArrowLabel x={1585} y={470} step={2} delay={28}>
         g
-      </At>
-      <Arrow {...ac} step={2} delay={50} dur={18} color={C.pink} width={4} curve={-60} />
-      <At x={1350} y={690} step={2} delay={60} size={32} weight={700} color={C.pink} font={F.mono}>
+      </ArrowLabel>
+      <Arrow {...ac} step={3} delay={6} dur={18} color={C.pink} width={4} curve={-60} />
+      <ArrowLabel x={1350} y={690} step={3} delay={16} color={C.pink}>
         g . f
+      </ArrowLabel>
+      <Loop p={PA} r={44} step={4} delay={6} side="left" />
+      <Loop p={PB} r={44} step={4} delay={14} side="up" />
+      <Loop p={PC} r={44} step={4} delay={22} side="right" />
+      <At x={1000} y={790} w={820} step={5} delay={30} size={26} weight={600} color={C.dim}>
+        Типи Haskell з функціями, композицією <M c={C.dim}>(.)</M> та <M c={C.dim}>id</M> утворюють категорію.
       </At>
-      <Loop p={PA} r={44} step={3} delay={10} side="left" />
-      <Loop p={PB} r={44} step={3} delay={18} side="up" />
-      <Loop p={PC} r={44} step={3} delay={26} side="right" />
-      <At x={96} y={812} w={1720} step={4} delay={30} size={28} weight={400} color={C.dim}>
-        Типи й функції дають корисну інтерпретацію об’єктів і морфізмів у Haskell.
-      </At>
-      <At
-        x={96}
-        y={868}
-        w={1728}
-        step={5}
-        size={30}
-        weight={600}
-        style={{ padding: "16px 26px", borderRadius: 14, background: C.panel, borderLeft: `6px solid ${C.accentHi}`, boxSizing: "border-box" }}
+    </Slide>
+  );
+};
+
+/* 15c · Функтор */
+const MapArrow: React.FC<{ x1: number; x2: number; y: number; step: number; delay?: number; color: string; label: string }> = ({
+  x1,
+  x2,
+  y,
+  step,
+  delay = 0,
+  color,
+  label,
+}) => {
+  const { lin } = useSteps();
+  const k = lin(step, delay, 18);
+  return (
+    <>
+      <svg width={1920} height={1080} style={{ position: "absolute", left: 0, top: 0 }}>
+        <line x1={x1} y1={y} x2={x1 + (x2 - 14 - x1) * k} y2={y} stroke={color} strokeWidth={3} strokeDasharray="10 8" />
+        <polygon points={`${x2},${y} ${x2 - 16},${y - 9} ${x2 - 16},${y + 9}`} fill={color} opacity={clamp01(k * 4 - 3)} />
+      </svg>
+      <div
+        style={{
+          position: "absolute",
+          left: (x1 + x2) / 2 - 40,
+          top: y - 44,
+          width: 80,
+          textAlign: "center",
+          fontFamily: F.mono,
+          fontWeight: 700,
+          fontSize: 28,
+          color,
+          opacity: k,
+        }}
       >
-        <A>Функтор</A> <M>F</M> – відображення між категоріями, яке кожному об’єкту <M>a</M> зіставляє об’єкт <M>F a</M>, а кожному
-        морфізму <M>{"f :: a -> b"}</M> – морфізм <M>{"F f :: F a -> F b"}</M>, зберігаючи тотожні морфізми та композицію.
+        {label}
+      </div>
+    </>
+  );
+};
+
+const Panel: React.FC<{ x: number; title: string; step: number; delay?: number }> = ({ x, title, step, delay = 0 }) => {
+  const { s } = useSteps();
+  const p = s(step, delay);
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: x,
+        top: 330,
+        width: 600,
+        height: 380,
+        borderRadius: 22,
+        border: `2px solid ${C.line}`,
+        background: "rgba(33,39,56,0.6)",
+        opacity: clamp01(p),
+        boxSizing: "border-box",
+      }}
+    >
+      <div style={{ position: "absolute", left: 22, top: 16, fontFamily: F.body, fontWeight: 700, fontSize: 24, color: C.dim }}>{title}</div>
+    </div>
+  );
+};
+
+const SFunctor: React.FC = () => {
+  const LX = 400;
+  const RX = 1520;
+  const Y1 = 430;
+  const Y2 = 630;
+  return (
+    <Slide title="Функтор">
+      <Lead>
+        <A>Функтор</A> <M>F</M> – відображення між категоріями: кожен об’єкт <M>a</M> переходить в об’єкт <M>F a</M>, кожен морфізм{" "}
+        <M>{"f : a -> b"}</M> – у морфізм <M>{"F f : F a -> F b"}</M>.
+      </Lead>
+      <Panel x={100} title="категорія C" step={1} />
+      <TypeNode p={{ x: LX, y: Y1 }} label="Int" step={1} delay={8} />
+      <TypeNode p={{ x: LX, y: Y2 }} label="Bool" step={1} delay={14} />
+      <Arrow x1={LX} y1={Y1 + 34} x2={LX} y2={Y2 - 34} step={1} delay={22} dur={14} color={C.mint} width={4} />
+      <ArrowLabel x={LX + 20} y={Y1 + 70} step={1} delay={28}>
+        even
+      </ArrowLabel>
+
+      <Panel x={1220} title="категорія D" step={2} />
+      <MapArrow x1={LX + 60} x2={RX - 100} y={Y1} step={2} delay={6} color={C.lav} label="F" />
+      <MapArrow x1={LX + 70} x2={RX - 110} y={Y2} step={2} delay={14} color={C.lav} label="F" />
+      <TypeNode p={{ x: RX, y: Y1 }} label="Maybe Int" step={2} delay={26} color={C.accentHi} />
+      <TypeNode p={{ x: RX, y: Y2 }} label="Maybe Bool" step={2} delay={32} color={C.accentHi} />
+
+      <MapArrow x1={LX + 120} x2={RX - 20} y={(Y1 + Y2) / 2} step={3} color={C.amber} label="F" />
+      <Arrow x1={RX} y1={Y1 + 34} x2={RX} y2={Y2 - 34} step={3} delay={20} dur={14} color={C.pink} width={4} />
+      <ArrowLabel x={RX + 20} y={Y1 + 70} step={3} delay={26} color={C.pink}>
+        fmap even
+      </ArrowLabel>
+
+      <At x={96} y={750} w={1720} step={4} size={30} weight={600}>
+        Функтор не руйнує структуру: тотожний морфізм переходить у тотожний, композиція – у композицію.
+      </At>
+      <Code x={96} y={804} size={30} step={4} delay={14} code={`F id = id          F (g . f) = F g . F f`} />
+      <At x={96} y={880} w={1720} step={5} size={32} weight={600}>
+        У Haskell <M>F</M> на об’єктах – конструктор типу <M>Maybe</M>, на морфізмах – <M>fmap</M>. Тож функтор дає звичайній функції{" "}
+        <M>even</M> працювати в новому контексті.
       </At>
     </Slide>
   );
@@ -255,7 +473,8 @@ const S16: React.FC = () => {
   return (
     <Slide title="Функтор у теорії категорій">
       <Lead>
-        <A>Ендофунктор</A> – функтор, який відображає категорію в саму себе, зберігаючи тотожні морфізми та композицію.
+        <A>Ендофунктор</A> – функтор із категорії в ту саму категорію. <M>Maybe</M> переводить типи Haskell знову в типи Haskell,
+        тому кожен <M>Functor</M> у Haskell – ендофунктор.
       </Lead>
       <At x={120} y={330} step={1} size={26} weight={600} color={C.dim}>
         загальна схема: a, b – типи (можуть збігатися)
@@ -451,7 +670,9 @@ const S18: React.FC = () => {
 };
 
 export const s3Slides: SlideDef[] = [
-  { id: "category", title: "Категорія і морфізми", steps: [45, 70, 90, 60, 80, 60], C: S15 },
+  { id: "morphism", title: "Об’єкти і морфізми", steps: [55, 70, 130, 60, 60], C: SMorphism },
+  { id: "category", title: "Категорія", steps: [45, 60, 60, 80, 60, 90], C: SCategory },
+  { id: "functor-cat", title: "Функтор", steps: [70, 60, 70, 60, 60, 70], C: SFunctor },
   { id: "endofunctor", title: "Функтор у теорії категорій", steps: [45, 50, 50, 40, 80, 55], C: S16 },
   { id: "functor-laws", title: "Закони функтора", steps: [45, 80, 50, 150, 55], C: S17 },
   { id: "monoid", title: "Моноїд", steps: [45, 70, 60, 55], C: S18 },
