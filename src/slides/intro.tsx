@@ -4,7 +4,6 @@ import { mix, POP, SlideDef, useSteps } from "../deck/steps";
 import { At, HaskellLogo, Slide } from "../deck/ui";
 import { AuthorBlock } from "../deck/Author";
 import { clamp01 } from "./common";
-import { Ctx, FlowArrow, Val } from "./kit";
 
 const TitleSlide: React.FC = () => {
   const { s } = useSteps();
@@ -50,165 +49,121 @@ const TitleSlide: React.FC = () => {
   );
 };
 
-/* Epigraph: a monoid has a neutral element and an associative product; a monad has η and μ with the same laws. */
+/* Epigraph: one context layer folds into the other, Just (Just 5) becomes Just 5 (μ, join). */
+const COLLAPSE = 110;
+
 const QuoteSlide: React.FC = () => {
   const { s } = useSteps();
   const words = (str: string, base: number, color?: string) =>
     str.split(" ").map((w, i) => {
-      const p = s(0, base + i * 4, POP);
+      const p = s(0, base + i * 5, POP);
       return (
         <span key={i} style={{ display: "inline-block", whiteSpace: "pre", opacity: Math.min(1, p), transform: `translateY(${(1 - p) * 40}px)`, color }}>
           {w + " "}
         </span>
       );
     });
-  const panel = (x: number, title: string, color: string, p: number, children: React.ReactNode) => (
-    <div
-      style={{
-        position: "absolute",
-        left: x,
-        top: 330,
-        width: 820,
-        height: 380,
-        borderRadius: 20,
-        background: C.panel,
-        border: `3px solid ${color}`,
-        boxSizing: "border-box",
-        opacity: clamp01(p),
-        transform: `translateY(${(1 - p) * 24}px)`,
-      }}
-    >
-      <div style={{ position: "absolute", left: 30, top: 22, fontFamily: F.body, fontWeight: 800, fontSize: 28, color }}>{title}</div>
-      {children}
-    </div>
+  const box = s(0, 60, POP);
+  const k = s(0, COLLAPSE);
+  const label = (text: string, color: string, extra?: React.CSSProperties) => (
+    <span style={{ fontFamily: F.mono, fontWeight: 700, fontSize: 44, color, whiteSpace: "nowrap", overflow: "hidden", ...extra }}>{text}</span>
   );
-  const row = (top: number, at: number, children: React.ReactNode) => {
-    const p = s(0, at, POP);
-    return (
-      <div style={{ position: "absolute", left: 30, top, display: "flex", alignItems: "center", gap: 14, opacity: clamp01(p), transform: `translateX(${(1 - p) * -24}px)` }}>
-        {children}
-      </div>
-    );
-  };
-  const op = (t: string) => <span style={{ fontFamily: F.mono, fontWeight: 700, fontSize: 28, color: C.op, whiteSpace: "pre" }}>{t}</span>;
-  const arrow = (label: string, at: number) => <FlowArrow p={clamp01((s(0, at) - 0.05) * 1.2)} label={label} w={110} />;
-  const assoc1 = s(0, 90);
-  const join = s(0, 150);
   return (
     <Slide>
-      <div style={{ position: "absolute", left: 110, top: 100, width: 1720, fontFamily: F.head, fontWeight: 800, fontSize: 56, lineHeight: 1.22, color: C.text }}>
+      <div style={{ position: "absolute", left: 110, top: 190, fontFamily: F.head, fontWeight: 800, fontSize: 70, lineHeight: 1.2, color: C.text }}>
+        <div>{words("All told, a monad in X", 6)}</div>
         <div>
-          {words("All told, a monad in X is just", 6)}
-          {words("a monoid", 34, C.accentHi)}
+          {words("is just", 36)}
+          {words("a monoid", 46, C.accentHi)}
+          {words("in the", 56)}
         </div>
-        <div>{words("in the category of endofunctors of X …", 44)}</div>
+        <div>{words("category of endofunctors of X …", 66)}</div>
       </div>
-      {panel(
-        112,
-        "моноїд: нейтральний [] і асоціативне ++",
-        C.lav,
-        s(0, 30, POP),
-        <>
-          {row(
-            96,
-            46,
-            <>
-              {op("(")}
-              <Val color={C.lav}>[1]</Val>
-              {op("++")}
-              <Val color={C.lav}>[2]</Val>
-              {op(")")}
-              {op("++")}
-              <Val color={C.lav}>[3]</Val>
-            </>,
-          )}
-          {row(
-            176,
-            62,
-            <>
-              <Val color={C.lav}>[1]</Val>
-              {op("++")}
-              {op("(")}
-              <Val color={C.lav}>[2]</Val>
-              {op("++")}
-              <Val color={C.lav}>[3]</Val>
-              {op(")")}
-            </>,
-          )}
-          <div style={{ position: "absolute", left: 560, top: 136, opacity: clamp01(assoc1), transform: `scale(${0.7 + 0.3 * assoc1})` }}>
-            {op("= ")}
-            <Val>[1,2,3]</Val>
-          </div>
-          {row(
-            268,
-            110,
-            <>
-              <Val color={C.lav}>[]</Val>
-              {op("++ xs  =  xs  =  xs ++")}
-              <Val color={C.lav}>[]</Val>
-            </>,
-          )}
-        </>,
-      )}
-      {panel(
-        988,
-        "монада: η (pure) і μ (join)",
-        C.mint,
-        s(0, 36, POP),
-        <>
-          {row(
-            96,
-            70,
-            <>
-              <Val color={C.lav}>5</Val>
-              {arrow("η", 74)}
-              <span style={{ opacity: clamp01(s(0, 84)), transform: `scale(${0.8 + 0.2 * s(0, 84, POP)})`, display: "inline-flex" }}>
-                <Ctx label="Just">
-                  <Val>5</Val>
-                </Ctx>
-              </span>
-            </>,
-          )}
-          {row(
-            196,
-            120,
-            <>
-              <Ctx label="Just" color={C.pink}>
-                <Ctx label="Just">
-                  <Val>5</Val>
-                </Ctx>
-              </Ctx>
-              {arrow("μ", 132)}
-              <span style={{ opacity: clamp01(join), transform: `scale(${0.8 + 0.2 * s(0, 150, POP)})`, display: "inline-flex" }}>
-                <Ctx label="Just" glow={join * (1 - s(0, 175))}>
-                  <Val>5</Val>
-                </Ctx>
-              </span>
-            </>,
-          )}
-          <div style={{ position: "absolute", left: 30, top: 300, fontFamily: F.body, fontSize: 26, color: C.dim, opacity: clamp01(s(0, 170)) }}>
-            η – як нейтральний елемент, μ – як асоціативна операція
-          </div>
-        </>,
-      )}
+      <div
+        style={{
+          position: "absolute",
+          left: 1580,
+          top: 380,
+          transform: `translate(-50%, -50%) scale(${0.7 + 0.3 * box})`,
+          opacity: clamp01(box),
+          display: "inline-flex",
+          alignItems: "center",
+          gap: mix(16, 0, k),
+          padding: mix(16, 0, k),
+          borderRadius: 24,
+          border: `4px solid rgba(178,95,168,${1 - k})`,
+          background: `rgba(178,95,168,${0.1 * (1 - k)})`,
+        }}
+      >
+        {label("Just", C.pink, { maxWidth: mix(110, 0, k), opacity: 1 - k })}
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 16,
+            padding: "12px 18px",
+            borderRadius: 20,
+            border: `4px solid ${C.accentHi}`,
+            background: "rgba(169,148,255,0.08)",
+          }}
+        >
+          {label("Just", C.accentHi)}
+          <span
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              minWidth: 64,
+              height: 64,
+              borderRadius: 12,
+              border: `3px solid ${C.mint}`,
+              background: `${C.mint}1f`,
+              fontFamily: F.mono,
+              fontWeight: 700,
+              fontSize: 40,
+              color: C.mint,
+            }}
+          >
+            5
+          </span>
+        </span>
+      </div>
+      <div
+        style={{
+          position: "absolute",
+          left: 1280,
+          top: 480,
+          width: 600,
+          textAlign: "center",
+          fontFamily: F.mono,
+          fontWeight: 600,
+          fontSize: 28,
+          color: C.dim,
+          fontVariantLigatures: "none",
+          whiteSpace: "nowrap",
+          opacity: clamp01(s(0, COLLAPSE + 20)),
+        }}
+      >
+        join (Just (Just 5)) = Just 5
+      </div>
       <div
         style={{
           position: "absolute",
           left: 116,
-          top: 750,
+          top: 540,
           height: 6,
           width: mix(0, 420, s(1, 0)),
           background: `linear-gradient(90deg, ${C.accent}, ${C.pink})`,
           borderRadius: 3,
         }}
       />
-      <At x={110} y={780} w={1700} step={1} delay={6} size={42} weight={600} color={C.text}>
+      <At x={110} y={580} w={1150} step={1} delay={6} size={44} weight={600} color={C.text}>
         Зрештою, монада в X – це просто моноїд у категорії ендофункторів X.
       </At>
-      <At x={110} y={900} step={1} delay={24} size={34} weight={400} color={C.dim} font={F.mono}>
+      <At x={110} y={750} step={1} delay={24} size={34} weight={400} color={C.dim} font={F.mono}>
         Saunders Mac Lane
       </At>
-      <At x={110} y={950} w={1600} step={1} delay={36} size={30} weight={400} color={C.dim}>
+      <At x={110} y={802} w={1150} step={1} delay={36} size={30} weight={400} color={C.dim}>
         «Categories for the Working Mathematician», 1971
       </At>
     </Slide>
@@ -297,7 +252,7 @@ const Agenda: React.FC<{ active?: number }> = ({ active }) => {
 
 export const introSlides: SlideDef[] = [
   { id: "title", title: "Титул", steps: [110], C: TitleSlide },
-  { id: "quote", title: "Епіграф", steps: [210, 120], C: QuoteSlide },
+  { id: "quote", title: "Епіграф", steps: [170, 120], C: QuoteSlide },
   { id: "agenda", title: "План", steps: [60], C: () => <Agenda /> },
 ];
 
