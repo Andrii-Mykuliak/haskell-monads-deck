@@ -2,7 +2,7 @@ import React from "react";
 import { C, F } from "../deck/theme";
 import { POP, SlideDef, useSteps } from "../deck/steps";
 import { Code } from "../deck/Code";
-import { A, At, Lead, M, Mark, Slide } from "../deck/ui";
+import { A, At, HaskellLogo, Lead, M, Mark, Slide } from "../deck/ui";
 import { clamp01 } from "./common";
 
 /* 38 · Вибір найпростішої абстракції */
@@ -200,60 +200,47 @@ const S39: React.FC = () => {
   );
 };
 
-/* 40 · Контрольні питання */
-const QUESTIONS = [
-  "Чим різняться параметричний і обмежений поліморфізм?",
-  "Як визначають class, instance та deriving?",
-  "Що описує fmap і які два закони Functor?",
-  "Чим відрізняються Functor, Applicative і Monad?",
-  "Як інтерпретувати сигнатуру оператора >>= ?",
-  "Чому fmap може утворювати вкладений Maybe?",
-  "Які три закони визначають коректну монаду?",
-  "Чим різняться Maybe, Either, список, Logged, IO і State?",
+/* 40 · Підсумок */
+const POINTS: React.ReactNode[] = [
+  <>
+    Обмежений поліморфізм (<M>{"Eq a =>"}</M>) вимагає від типу операцій класу, параметричний – ні.
+  </>,
+  <>
+    <M>class</M> оголошує операції, <M>instance</M> їх реалізує, <M>deriving</M> виводить стандартні екземпляри.
+  </>,
+  <>
+    <M>fmap</M> змінює значення в контексті й зберігає його структуру; закони – тотожність і композиція.
+  </>,
+  <>
+    Functor – одне значення в контексті, Applicative – незалежні обчислення, Monad – залежні кроки.
+  </>,
+  <>
+    <M>{">>="}</M> передає результат <M>m a</M> функції наступного кроку <M>{"a -> m b"}</M> і повертає один <M>m b</M>.
+  </>,
+  <>
+    <M>fmap</M> з функцією, що повертає <M>Maybe</M>, дає вкладений <M>Maybe</M>; <M>{">>="}</M> вкладень не накопичує.
+  </>,
+  <>Коректна монада задовольняє ліву та праву тотожність і асоціативність.</>,
+  <>
+    Один інтерфейс Monad: <M>Maybe</M>, <M>Either</M>, список, <M>Logged</M>, <M>IO</M> і <M>State</M> – різні контексти обчислень.
+  </>,
 ];
 
 const S40: React.FC = () => {
   const { s } = useSteps();
   return (
-    <Slide title="Контрольні питання">
-      {QUESTIONS.map((q, i) => {
-        const p = s(0, 10 + i * 6, POP);
-        return (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              left: 104,
-              top: 180 + i * 102,
-              display: "flex",
-              alignItems: "center",
-              gap: 32,
-              opacity: clamp01(p),
-              transform: `translateX(${(1 - p) * -30}px)`,
-            }}
-          >
-            <div
-              style={{
-                width: 64,
-                height: 56,
-                borderRadius: 8,
-                background: i % 2 ? "#5e5086" : C.pink,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontFamily: F.body,
-                fontWeight: 800,
-                fontSize: 32,
-                color: C.text,
-                flexShrink: 0,
-              }}
-            >
-              {i + 1}
-            </div>
-            <div style={{ fontFamily: F.body, fontSize: 38, fontWeight: 600, color: C.text }}>{q}</div>
-          </div>
-        );
-      })}
+    <Slide>
+      <div style={{ position: "absolute", right: 90, top: 90, opacity: 0.22 * s(0, 10) }}>
+        <HaskellLogo size={380} p1={s(0, 4, POP)} p2={s(0, 10, POP)} p3={s(0, 16, POP)} />
+      </div>
+      <At x={130} y={140} step={0} delay={4} size={76} weight={800} font={F.head}>
+        Підсумок
+      </At>
+      {POINTS.map((p, i) => (
+        <At key={i} x={170} y={280 + i * 82} w={1680} step={0} delay={16 + i * 8} size={32} weight={600}>
+          <A c={C.pink}>•</A> {p}
+        </At>
+      ))}
     </Slide>
   );
 };
@@ -262,5 +249,5 @@ export const s7Slides: SlideDef[] = [
   { id: "choose", title: "Вибір абстракції", steps: [40, 90, 90], C: S38 },
   { id: "mistakes", title: "Типові помилки", steps: [20, 50, 50, 50, 50], C: S39 },
 ];
-export const questionsSlide: SlideDef = { id: "questions", title: "Контрольні питання", steps: [80], C: S40 };
+export const summarySlide: SlideDef = { id: "summary", title: "Підсумок", steps: [110], C: S40 };
 

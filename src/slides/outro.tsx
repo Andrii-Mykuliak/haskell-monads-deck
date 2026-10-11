@@ -75,12 +75,6 @@ const Outro: React.FC = () => {
           background: `linear-gradient(90deg, ${C.accent}, ${C.pink})`,
         }}
       />
-      <At x={96} y={500} w={780} step={0} delay={44} size={36} weight={700}>
-        Рекомендована книга:
-      </At>
-      <At x={96} y={556} w={780} step={0} delay={52} size={36} weight={400} color={C.lav} style={{ fontStyle: "italic" }}>
-        Learn You a Haskell for Great Good!
-      </At>
 
       <At x={X0} y={200} w={860} step={0} delay={24} size={28} weight={400} color={C.dim} font={F.mono} style={{ fontVariantLigatures: "none" }}>
         {"pure x >>= positive >>= inc >>= double"}

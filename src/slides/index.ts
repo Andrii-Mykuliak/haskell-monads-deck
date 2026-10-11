@@ -6,7 +6,7 @@ import { s3Slides } from "./m3-category";
 import { s4Slides } from "./m4-applicative";
 import { s5Slides } from "./m5-monad";
 import { s6Slides } from "./m6-examples";
-import { questionsSlide, s7Slides } from "./m7-practice";
+import { s7Slides, summarySlide } from "./m7-practice";
 import { outroSlide } from "./outro";
 
 export const SLIDES: SlideDef[] = [
@@ -24,6 +24,6 @@ export const SLIDES: SlideDef[] = [
   ...s6Slides,
   agendaSlide(6),
   ...s7Slides,
-  questionsSlide,
+  summarySlide,
   outroSlide,
 ];
