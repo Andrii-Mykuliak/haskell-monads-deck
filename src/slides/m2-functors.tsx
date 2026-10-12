@@ -176,15 +176,19 @@ const S10: React.FC = () => {
         </Chip>
         <span style={{ fontFamily: F.body, fontWeight: 700, fontSize: 34, color: C.dim }}>+</span>
         <Chip size={34} color={C.accentHi} border={C.accentHi}>
-          f a
+          PType a
         </Chip>
         <span style={{ fontFamily: F.body, fontWeight: 700, fontSize: 40, color: C.dim }}>⟹</span>
         <Chip size={34} color={C.mint} border={C.mint}>
-          f b
+          PType b
         </Chip>
       </div>
       <At x={96} y={870} w={1720} step={5} delay={14} size={34} weight={600}>
-        Потрібен загальний спосіб застосувати <M>{"a -> b"}</M> до значення <M>f a</M>, отримавши <M>f b</M>.
+        Потрібен загальний спосіб застосувати <M>{"a -> b"}</M> до значення типу <M>PType a</M>, отримавши <M>PType b</M>.
+      </At>
+      <At x={96} y={930} w={1720} step={5} delay={30} size={26} weight={400} color={C.dim}>
+        <M c={C.dim}>PType</M> – умовне позначення параметризованого типу-контексту, наприклад <M c={C.dim}>Maybe</M>: тоді{" "}
+        <M c={C.dim}>PType Int</M> – це <M c={C.dim}>Maybe Int</M>.
       </At>
     </Slide>
   );
@@ -202,8 +206,8 @@ const S11: React.FC = () => (
       size={36}
       step={1}
       code={`
-        class Functor f where
-            fmap :: (a -> b) -> f a -> f b
+        class Functor ptype where
+            fmap :: (a -> b) -> ptype a -> ptype b
       `}
     />
     <SyntaxBox
@@ -238,7 +242,7 @@ const S11: React.FC = () => (
       items={[{ el: <Val color={C.lav}>a</Val> }, { el: <Val>b</Val>, via: "g" }]}
     />
     <At x={1060} y={520} step={1} delay={50} size={26} weight={600} color={C.dim}>
-      та сама функція в контексті <M c={C.accentHi}>f</M>
+      та сама функція в контексті <M c={C.accentHi}>PType</M>
     </At>
     <Flow
       x={1040}
@@ -249,14 +253,14 @@ const S11: React.FC = () => (
       items={[
         {
           el: (
-            <Ctx label="f">
+            <Ctx label="PType">
               <Val color={C.lav}>a</Val>
             </Ctx>
           ),
         },
         {
           el: (
-            <Ctx label="f">
+            <Ctx label="PType">
               <Val>b</Val>
             </Ctx>
           ),
@@ -265,7 +269,8 @@ const S11: React.FC = () => (
       ]}
     />
     <At x={96} y={880} w={1720} step={3} size={34} weight={600}>
-      Конструктор <M>f</M> задає <A>форму контексту</A>; реалізація <M>fmap</M> залежить від конкретного типу.
+      <M>PType</M> задає <A>форму контексту</A>, реалізація <M>fmap</M> залежить від конкретного типу. У коді Haskell змінна типу
+      пишеться з малої літери: <M>ptype</M>.
     </At>
   </Slide>
 );
@@ -323,8 +328,8 @@ const S12: React.FC = () => (
 const S13: React.FC = () => (
   <Slide title="Functor і конструктор типу">
     <Lead>
-      <A>Конструктор типу</A> (наприклад, <M>Maybe</M>) приймає тип і утворює інший тип. У класі <M>Functor</M> змінна <M>f</M> – саме
-      такий конструктор: її застосовують до <M>a</M> і <M>b</M>.
+      <A>Конструктор типу</A> (наприклад, <M>Maybe</M>) приймає тип і утворює інший тип. У класі <M>Functor</M> змінна <M>ptype</M> –
+      саме такий конструктор: її застосовують до <M>a</M> і <M>b</M>.
     </Lead>
     <Code
       x={96}
@@ -332,25 +337,25 @@ const S13: React.FC = () => (
       size={38}
       step={1}
       code={`
-        class Functor [[1@20|f]] where
-            fmap :: (a -> b) -> [[1@20|f]] a -> [[1@20|f]] b
+        class Functor [[1@20|ptype]] where
+            fmap :: (a -> b) -> [[1@20|ptype]] a -> [[1@20|ptype]] b
       `}
     />
     <At x={96} y={500} step={2} pop dir="scale">
       <Chip size={30} color={C.mint} border={C.mint}>
-        f = Maybe
+        ptype = Maybe
       </Chip>
     </At>
-    <Code x={420} y={504} size={32} step={2} delay={14} code={`fmap :: (a -> b) -> [[2@34|Maybe]] a -> [[2@34|Maybe]] b`} />
-    <Mark ok x={1300} y={500} step={2} delay={50} size={50} />
+    <Code x={480} y={504} size={32} step={2} delay={14} code={`fmap :: (a -> b) -> [[2@34|Maybe]] a -> [[2@34|Maybe]] b`} />
+    <Mark ok x={1340} y={500} step={2} delay={50} size={50} />
     <At x={96} y={620} step={3} pop dir="scale">
       <Chip size={30} color={C.red} border={C.red}>
-        f = Maybe Int
+        ptype = Maybe Int
       </Chip>
     </At>
-    <Code x={420} y={624} size={32} step={3} delay={14} code={`fmap :: (a -> b) -> [[!3@34|Maybe Int a]] -> [[!3@34|Maybe Int b]]`} />
-    <Mark ok={false} x={1440} y={620} step={3} delay={50} size={50} />
-    <At x={420} y={680} w={1400} step={3} delay={60} size={26} weight={600} color={C.dim}>
+    <Code x={480} y={624} size={32} step={3} delay={14} code={`fmap :: (a -> b) -> [[!3@34|Maybe Int a]] -> [[!3@34|Maybe Int b]]`} />
+    <Mark ok={false} x={1500} y={620} step={3} delay={50} size={50} />
+    <At x={480} y={680} w={1340} step={3} delay={60} size={26} weight={600} color={C.dim}>
       <M c={C.dim}>Maybe Int</M> – уже готовий тип, ще один аргумент <M c={C.dim}>a</M> йому передати не можна
     </At>
     <At x={96} y={780} step={4} pop dir="scale">

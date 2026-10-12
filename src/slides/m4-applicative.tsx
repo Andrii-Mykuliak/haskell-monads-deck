@@ -81,12 +81,12 @@ const S20: React.FC = () => (
     <Code
       x={96}
       y={330}
-      size={34}
+      size={30}
       step={1}
       code={`
-        class Functor f => Applicative f where
-            pure  :: a -> f a
-            (<*>) :: f (a -> b) -> f a -> f b
+        class Functor ptype => Applicative ptype where
+            pure  :: a -> ptype a
+            (<*>) :: ptype (a -> b) -> ptype a -> ptype b
       `}
     />
     <Code
@@ -220,8 +220,8 @@ const S21: React.FC = () => {
 
 /* 22 · Три рівні композиції */
 const LEVELS = [
-  { name: "Functor", color: C.mint, sig: "fmap  :: (a -> b) -> f a -> f b", desc: "перетворення одного значення всередині контексту" },
-  { name: "Applicative", color: C.accentHi, sig: "(<*>) :: f (a -> b) -> f a -> f b", desc: "поєднання незалежних контекстних обчислень" },
+  { name: "Functor", color: C.mint, sig: "fmap  :: (a -> b) -> ptype a -> ptype b", desc: "перетворення одного значення всередині контексту" },
+  { name: "Applicative", color: C.accentHi, sig: "(<*>) :: ptype (a -> b) -> ptype a -> ptype b", desc: "поєднання незалежних контекстних обчислень" },
   { name: "Monad", color: C.pink, sig: "(>>=) :: m a -> (a -> m b) -> m b", desc: "поєднання залежних кроків виду a → m b" },
 ];
 

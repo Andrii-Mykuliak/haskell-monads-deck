@@ -59,12 +59,12 @@ const S38: React.FC = () => {
         delay={20}
         stagger={14}
         code={`
-          incAll :: Functor f => f Int -> f Int   -- достатньо
-          incAll :: Monad m   => m Int -> m Int   -- надмірна вимога
+          incAll :: Functor ptype => ptype Int -> ptype Int   -- достатньо
+          incAll :: Monad m       => m Int -> m Int           -- надмірна вимога
         `}
       />
-      <Mark ok x={1200} y={806} step={2} delay={34} size={40} />
-      <Mark ok={false} x={1200} y={846} step={2} delay={48} size={40} />
+      <Mark ok x={1300} y={806} step={2} delay={34} size={40} />
+      <Mark ok={false} x={1300} y={846} step={2} delay={48} size={40} />
     </Slide>
   );
 };
